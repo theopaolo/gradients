@@ -11,7 +11,6 @@ export const audioData = {
     bassEnergy: 0,
     midEnergy: 0,
     highEnergy: 0,
-    // Add a transition state flag for smoother changes
     isTransitioning: false,
     transitionStart: 0
 };
@@ -58,28 +57,6 @@ const synth = new Tone.PolySynth({
     }
 }).connect(delay).connect(autoPanner);
 
-function playForDuration(durationInBars) {
-    const startTime = Tone.Transport.seconds + 0.1;
-    // Calculate when 3 bars will end
-    const endTime = startTime + Tone.Time(durationInBars + "m").toSeconds();
-
-    // Schedule note start
-    Tone.Transport.schedule((time) => {
-        synth.triggerAttack(["C3", "G3", "C4"], time);
-    }, startTime);
-
-    // Schedule note end
-    Tone.Transport.schedule((time) => {
-        synth.triggerRelease(["C3", "G3", "C4"], time);
-    }, endTime);
-}
-
-function playChordWithDuration(chord, durationInBars) {
-    Tone.Transport.scheduleOnce((time) => {
-        synth.triggerAttackRelease(chord, durationInBars + "m", time);
-    }, "+0.1");  // Start slightly in the future
-}
-
 let playButton = document.getElementById("play-button");
 let isPlaying = false;
 const TRANSITION_DURATION = 1.0; // Transition duration in seconds
@@ -100,6 +77,18 @@ function resetAudioData() {
     audioData.midEnergy = 0;
     audioData.highEnergy = 0;
     audioData.isTransitioning = false;
+}
+
+// Function to stop all audio and update UI
+function stopAllAudio() {
+    synth.releaseAll();
+    Tone.getTransport().stop();
+    Tone.getTransport().cancel();
+    Tone.getTransport().seconds = 0;
+    isPlaying = false;
+    playButton.classList.remove("playing");
+    playButton.innerText = "Play";
+    startTransition();
 }
 
 // Function to start a smooth transition out
@@ -195,42 +184,46 @@ function updateAudioData() {
 // Start the audio data update loop
 updateAudioData();
 
-// Add a listener to detect when the 3m audio finishes
-Tone.Transport.scheduleRepeat((time) => {
-    // Check if we're at the 3m mark (in seconds)
-    const currentTime = Tone.Transport.seconds;
-    // 3 measures at default 120bpm = 6 seconds (each measure is 2s at 120bpm)
-    if (currentTime >= 6 && isPlaying) {
-        // Stop playing and reset
-        isPlaying = false;
-        Tone.Transport.stop();
-        playButton.classList.remove("playing");
-        playButton.innerText = "Play";
-        // Start smooth transition instead of immediate reset
-        startTransition();
+// Function to start playback
+function startPlayback() {
+    isPlaying = true;
+    if (Tone.BaseContext.state !== 'running') {
+        Tone.start();
     }
-}, "0.1"); // Check every 0.1 seconds
+    Tone.getTransport().start();
+    Tone.getTransport().seconds = 0;
 
-playButton.addEventListener("mousedown", () => {
-  isPlaying = !isPlaying;
-
-  if (isPlaying) {
-    Tone.start();
-    Tone.Transport.start();
-    // Reset transport time to ensure we start from beginning
-    Tone.Transport.seconds = 0;
-
-    Tone.Transport.scheduleOnce((time) => {
+    // Schedule the initial chord
+    Tone.getTransport().scheduleOnce((time) => {
         synth.triggerAttackRelease(["C3", "G3", "C4"], "3m", time);
     }, "+0.1");
 
+    // Schedule the stop at 6 seconds
+    Tone.getTransport().scheduleOnce((time) => {
+        if (isPlaying) {
+            // Start transition first
+            startTransition();
+            // Then stop the audio after a short delay to allow transition to begin
+            setTimeout(() => {
+                synth.releaseAll();
+                Tone.getTransport().stop();
+                Tone.getTransport().cancel();
+                Tone.getTransport().seconds = 0;
+                isPlaying = false;
+                playButton.classList.remove("playing");
+                playButton.innerText = "Play";
+            }, 50); // Small delay to ensure transition starts before stopping
+        }
+    }, "+6");
+
     playButton.classList.add("playing");
-    playButton.innerText = "Pause";
-  } else {
-    Tone.Transport.stop();
-    playButton.classList.remove("playing");
-    playButton.innerText = "Play";
-    // Start a smooth transition instead of immediately resetting
-    startTransition();
-  }
+    playButton.innerText = "Stop";
+}
+
+playButton.addEventListener("mousedown", () => {
+    if (!isPlaying) {
+        startPlayback();
+    } else {
+        stopAllAudio();
+    }
 });
