@@ -212,7 +212,7 @@ function startPlayback() {
                 isPlaying = false;
                 playButton.classList.remove("playing");
                 playButton.innerText = "Play";
-            }, 50); // Small delay to ensure transition starts before stopping
+            }, TRANSITION_DURATION * 1000); // Wait for the full transition duration
         }
     }, "+6");
 
