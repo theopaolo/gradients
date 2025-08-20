@@ -35,33 +35,16 @@ const uniforms = {
   colorIntensity: { value: 1.0 },
   flowSpeed: { value: 1.0 },
 
-  // Whimsical cloud controls
-  cloudCoverage: { value: 0.5 },        // Nice amount of clouds
-  cloudFluffiness: { value: 0.8 },      // How fluffy/soft the clouds are
-  cloudScale: { value: 2.0 },           // Bigger, fluffier clouds
-  cloudSpeed: { value: 0.2 },           // Gentle drift
-  cloudDensity: { value: 0.6 },         // Light and airy
 
   // Particle effects
-  particleCount: { value: 0.3 },        // Amount of floating particles
-  particleSpeed: { value: 0.1 },        // Particle movement speed
-  particleSize: { value: 0.5 },         // Size of particles
+  particleCount: { value: 0.1 },        // Amount of floating particles
+  particleSpeed: { value: 0.05 },       // Particle movement speed
+  particleSize: { value: 0.1 },         // Size of particles
 
-  // Volumetric cloud controls
-  volumetricCloudSize: { value: 0.3 },    // Size of the main volumetric cloud
-  volumetricCloudDensity: { value: 0.8 }, // Density of the volumetric cloud
-  cloudHeight: { value: 0.6 },           // Height of the cloud center
-  cloudDepth: { value: 0.4 },            // Depth/thickness of the cloud
-  erosionStrength: { value: 0.2 },       // Envelope erosion strength
-  lightingIntensity: { value: 1.0 },     // Lighting strength
-  scatteringStrength: { value: 0.8 },    // Light scattering strength
 
-  // Cute sky colors (whimsical pastels)
+  // Sky colors
   skyColor1: { value: new THREE.Color(0.8, 0.9, 1.0) },      // Soft blue
-  skyColor2: { value: new THREE.Color(1.0, 0.95, 0.9) },     // Peachy white
-  cloudColorLight: { value: new THREE.Color(1.0, 1.0, 1.0) }, // Pure white
-  cloudColorDark: { value: new THREE.Color(0.9, 0.9, 0.95) }, // Very light gray
-  cloudColorEdge: { value: new THREE.Color(1.0, 0.98, 0.95) } // Creamy white
+  skyColor2: { value: new THREE.Color(1.0, 0.95, 0.9) }     // Peachy white
 };
 
 const material = new THREE.ShaderMaterial({
@@ -76,7 +59,7 @@ scene.add(mesh);
 
 // === GUI SETUP ===
 const gui = new GUI();
-gui.title('Whimsical Sky Generator');
+gui.title('Sky Gradient Generator');
 
 // Time & Atmosphere controls
 const timeFolder = gui.addFolder('Time & Atmosphere');
@@ -91,29 +74,13 @@ timeFolder.add(uniforms.colorIntensity, 'value', 0, 2, 0.01)
 timeFolder.add(uniforms.flowSpeed, 'value', 0, 3, 0.01)
   .name('Animation Speed');
 
-// Fluffy Cloud Controls
-const cloudFolder = gui.addFolder('Fluffy Clouds');
-cloudFolder.add(uniforms.cloudCoverage, 'value', 0, 1, 0.01).name('Cloud Coverage');
-cloudFolder.add(uniforms.cloudFluffiness, 'value', 0.1, 2, 0.01).name('Fluffiness');
-cloudFolder.add(uniforms.cloudScale, 'value', 0.5, 5, 0.1).name('Cloud Size');
-cloudFolder.add(uniforms.cloudSpeed, 'value', 0, 1, 0.01).name('Drift Speed');
-cloudFolder.add(uniforms.cloudDensity, 'value', 0, 1, 0.01).name('Cloud Density');
 
-// Particle Effects
-const particleFolder = gui.addFolder('Magical Particles');
-particleFolder.add(uniforms.particleCount, 'value', 0, 1, 0.01).name('Particle Amount');
-particleFolder.add(uniforms.particleSpeed, 'value', 0, 0.5, 0.01).name('Particle Speed');
-particleFolder.add(uniforms.particleSize, 'value', 0.1, 2, 0.01).name('Particle Size');
+// Dust Particles
+const particleFolder = gui.addFolder('Shiny Dust');
+particleFolder.add(uniforms.particleCount, 'value', 0, 0.5, 0.01).name('Dust Amount');
+particleFolder.add(uniforms.particleSpeed, 'value', 0, 0.2, 0.01).name('Dust Speed');
+particleFolder.add(uniforms.particleSize, 'value', 0.05, 0.5, 0.01).name('Dust Size');
 
-// Volumetric Cloud Controls
-const volumetricFolder = gui.addFolder('Volumetric Cloud');
-volumetricFolder.add(uniforms.volumetricCloudSize, 'value', 0.1, 1.0, 0.01).name('Cloud Size');
-volumetricFolder.add(uniforms.volumetricCloudDensity, 'value', 0, 2, 0.01).name('Cloud Density');
-volumetricFolder.add(uniforms.cloudHeight, 'value', 0, 1, 0.01).name('Cloud Height');
-volumetricFolder.add(uniforms.cloudDepth, 'value', 0.1, 1, 0.01).name('Cloud Depth');
-volumetricFolder.add(uniforms.erosionStrength, 'value', 0, 1, 0.01).name('Erosion Strength');
-volumetricFolder.add(uniforms.lightingIntensity, 'value', 0, 3, 0.01).name('Lighting Intensity');
-volumetricFolder.add(uniforms.scatteringStrength, 'value', 0, 2, 0.01).name('Scattering Strength');
 
 // Sky Colors
 const skyFolder = gui.addFolder('Sky Colors');
@@ -124,77 +91,35 @@ skyFolder.addColor({ color: uniforms.skyColor2.value.getHex() }, 'color')
   .name('Sky Color 2')
   .onChange(value => uniforms.skyColor2.value.setHex(value));
 
-// Cloud Colors
-const cloudColorFolder = gui.addFolder('Cloud Colors');
-cloudColorFolder.addColor({ color: uniforms.cloudColorLight.value.getHex() }, 'color')
-  .name('Cloud Highlights')
-  .onChange(value => uniforms.cloudColorLight.value.setHex(value));
-cloudColorFolder.addColor({ color: uniforms.cloudColorDark.value.getHex() }, 'color')
-  .name('Cloud Shadows')
-  .onChange(value => uniforms.cloudColorDark.value.setHex(value));
-cloudColorFolder.addColor({ color: uniforms.cloudColorEdge.value.getHex() }, 'color')
-  .name('Cloud Edges')
-  .onChange(value => uniforms.cloudColorEdge.value.setHex(value));
 
-// Whimsical sky presets
-const whimsicalPresets = {
+// Sky presets
+const skyPresets = {
   'Cotton Candy': () => {
     uniforms.skyColor1.value.setRGB(1.0, 0.8, 0.9);
     uniforms.skyColor2.value.setRGB(0.8, 0.9, 1.0);
-    uniforms.cloudFluffiness.value = 1.5;
-    uniforms.cloudCoverage.value = 0.6;
-    uniforms.volumetricCloudSize.value = 0.4;
-    uniforms.volumetricCloudDensity.value = 0.6;
-    uniforms.scatteringStrength.value = 1.2;
     uniforms.timeOfDay.value = 0.8;
   },
   'Sunny Day': () => {
     uniforms.skyColor1.value.setRGB(0.6, 0.8, 1.0);
     uniforms.skyColor2.value.setRGB(1.0, 1.0, 0.9);
-    uniforms.cloudFluffiness.value = 0.8;
-    uniforms.cloudCoverage.value = 0.3;
-    uniforms.volumetricCloudSize.value = 0.3;
-    uniforms.volumetricCloudDensity.value = 0.8;
-    uniforms.lightingIntensity.value = 1.5;
     uniforms.timeOfDay.value = 0.5;
   },
   'Dreamy Sunset': () => {
     uniforms.skyColor1.value.setRGB(1.0, 0.7, 0.5);
     uniforms.skyColor2.value.setRGB(0.9, 0.5, 0.7);
-    uniforms.cloudFluffiness.value = 1.2;
-    uniforms.cloudCoverage.value = 0.4;
-    uniforms.volumetricCloudSize.value = 0.5;
-    uniforms.volumetricCloudDensity.value = 1.0;
-    uniforms.scatteringStrength.value = 1.5;
     uniforms.timeOfDay.value = 0.75;
   },
   'Magical Morning': () => {
     uniforms.skyColor1.value.setRGB(0.9, 0.9, 1.0);
     uniforms.skyColor2.value.setRGB(1.0, 0.9, 0.8);
-    uniforms.cloudFluffiness.value = 1.0;
-    uniforms.cloudCoverage.value = 0.5;
     uniforms.particleCount.value = 0.5;
-    uniforms.volumetricCloudSize.value = 0.35;
-    uniforms.volumetricCloudDensity.value = 0.7;
-    uniforms.erosionStrength.value = 0.3;
     uniforms.timeOfDay.value = 0.3;
-  },
-  'Epic Cloud': () => {
-    uniforms.skyColor1.value.setRGB(0.7, 0.8, 0.95);
-    uniforms.skyColor2.value.setRGB(0.95, 0.95, 1.0);
-    uniforms.cloudCoverage.value = 0.2; // Minimal background clouds
-    uniforms.volumetricCloudSize.value = 0.6; // Large volumetric cloud
-    uniforms.volumetricCloudDensity.value = 1.2;
-    uniforms.cloudHeight.value = 0.7;
-    uniforms.erosionStrength.value = 0.4;
-    uniforms.lightingIntensity.value = 2.0;
-    uniforms.scatteringStrength.value = 1.8;
   }
 };
 
-const whimsicalPresetFolder = gui.addFolder('Whimsical Presets');
-Object.keys(whimsicalPresets).forEach(key => {
-  whimsicalPresetFolder.add(whimsicalPresets, key);
+const presetFolder = gui.addFolder('Sky Presets');
+Object.keys(skyPresets).forEach(key => {
+  presetFolder.add(skyPresets, key);
 });
 
 // Animation controls
@@ -227,12 +152,9 @@ Object.keys(exportControls).forEach(key => {
 
 // Collapse folders by default except main controls
 timeFolder.open();
-cloudFolder.open();
 particleFolder.open();
-volumetricFolder.open();
 skyFolder.close();
-cloudColorFolder.close();
-whimsicalPresetFolder.close();
+presetFolder.close();
 animationFolder.close();
 exportFolder.close();
 
