@@ -1,12 +1,18 @@
 import { MAX_COLORS, RAMP_MODES, makeColor } from "../constants.js";
 import { normalizeHex, expandHex } from "../color.js";
 import { readPaletteFromImage } from "../palette-metadata.js";
-import { pick } from "./dom.js";
+import { pick, icon, makeBareSlider } from "./dom.js";
 
 // The palette list: swatches, hex fields, drag reordering, and the per-row
 // value slider that means "stop" on a ramp and "size" in mesh mode.
 
-export function createColorControls({ panel, state, applyColors, handles }) {
+export function createColorControls({
+  panel,
+  state,
+  applyColors,
+  handles,
+  onPaletteChange,
+}) {
   const colorList = pick(panel, ".config-colors");
   const colorCount = pick(panel, ".config-count");
   const addButton = pick(panel, ".config-add");
@@ -18,6 +24,13 @@ export function createColorControls({ panel, state, applyColors, handles }) {
   const importNote = pick(panel, ".config-import-note");
 
   const isRampMode = () => RAMP_MODES.includes(state.mode);
+
+  // Anything that changes which colors are in the list, or what they are, also
+  // changes what the style chips preview.
+  function commit() {
+    applyColors();
+    onPaletteChange();
+  }
 
   // Stops belong to the slot rather than to the color, so any reshuffle moves
   // the colors along the ramp instead of carrying their positions with them.
@@ -47,7 +60,7 @@ export function createColorControls({ panel, state, applyColors, handles }) {
   function reorder(from, to) {
     if (to < 0 || to >= state.colors.length) return;
     moveColor(from, to);
-    applyColors();
+    commit();
     render();
     handles.refresh();
     colorList.children[to]?.querySelector(".config-grip")?.focus();
@@ -69,7 +82,7 @@ export function createColorControls({ panel, state, applyColors, handles }) {
     const grip = document.createElement("button");
     grip.type = "button";
     grip.className = "config-grip";
-    grip.textContent = "⠿";
+    grip.appendChild(icon("grip"));
     grip.setAttribute(
       "aria-label",
       `Reorder color ${index + 1} — drag, or use the arrow keys`,
@@ -98,7 +111,7 @@ export function createColorControls({ panel, state, applyColors, handles }) {
 
       moveColor(drag.index, target);
       drag.index = target;
-      applyColors();
+      commit();
     });
 
     // Ownership of the drag is the condition, not hasPointerCapture: the capture
@@ -134,8 +147,13 @@ export function createColorControls({ panel, state, applyColors, handles }) {
     return state.mode === "mesh" ? "radius" : null;
   }
 
+  // How each row's value control is written to from outside. Rebuilt with the
+  // list, and empty in the modes that have no per-color value.
+  let rowSetters = [];
+
   function render() {
     colorList.innerHTML = "";
+    rowSetters = [];
 
     const key = rowValueKey();
     const showStops = key === "stop";
@@ -162,7 +180,7 @@ export function createColorControls({ panel, state, applyColors, handles }) {
       swatch.addEventListener("input", () => {
         entry.hex = swatch.value;
         text.value = swatch.value;
-        applyColors();
+        commit();
         handles.refresh();
       });
 
@@ -171,7 +189,7 @@ export function createColorControls({ panel, state, applyColors, handles }) {
         if (!normalized) return;
         entry.hex = normalized;
         swatch.value = expandHex(normalized);
-        applyColors();
+        commit();
         handles.refresh();
       });
 
@@ -181,12 +199,12 @@ export function createColorControls({ panel, state, applyColors, handles }) {
         const remove = document.createElement("button");
         remove.type = "button";
         remove.className = "config-icon";
-        remove.textContent = "×";
+        remove.appendChild(icon("close"));
         remove.setAttribute("aria-label", `Remove color ${index + 1}`);
         remove.addEventListener("click", () => {
           state.colors.splice(index, 1);
           distributeStops();
-          applyColors();
+          commit();
           render();
           handles.refresh();
         });
@@ -196,22 +214,24 @@ export function createColorControls({ panel, state, applyColors, handles }) {
       row.appendChild(head);
 
       if (key) {
-        const slider = document.createElement("input");
-        slider.type = "range";
-        slider.className = "config-color-value";
-        slider.min = showStops ? 0 : 0.05;
-        slider.max = showStops ? 1 : 2;
-        slider.step = 0.01;
-        slider.value = entry[key];
+        const { track, slider, set } = makeBareSlider(
+          {
+            min: showStops ? 0 : 0.05,
+            max: showStops ? 1 : 2,
+            step: 0.01,
+          },
+          (value) => {
+            entry[key] = value;
+            commit();
+          },
+        );
         slider.setAttribute(
           "aria-label",
           showStops ? `Color ${index + 1} stop` : `Color ${index + 1} size`,
         );
-        slider.addEventListener("input", () => {
-          entry[key] = parseFloat(slider.value);
-          applyColors();
-        });
-        row.appendChild(slider);
+        set(entry[key]);
+        rowSetters[index] = set;
+        row.appendChild(track);
       }
 
       colorList.appendChild(row);
@@ -228,10 +248,7 @@ export function createColorControls({ panel, state, applyColors, handles }) {
   // the difference between a smooth drag and a stuttering one.
   function syncRow(index) {
     const key = rowValueKey();
-    const slider = colorList.children[index]?.querySelector(
-      ".config-color-value",
-    );
-    if (key && slider) slider.value = state.colors[index][key];
+    if (key) rowSetters[index]?.(state.colors[index][key]);
   }
 
   addButton.addEventListener("click", () => {
@@ -241,14 +258,14 @@ export function createColorControls({ panel, state, applyColors, handles }) {
       makeColor(last.hex, state.colors.length, state.colors.length + 1),
     );
     distributeStops();
-    applyColors();
+    commit();
     render();
     handles.refresh();
   });
 
   reverseButton.addEventListener("click", () => {
     withStopsPinned(() => state.colors.reverse());
-    applyColors();
+    commit();
     render();
     handles.refresh();
   });
@@ -260,14 +277,14 @@ export function createColorControls({ panel, state, applyColors, handles }) {
         [state.colors[i], state.colors[j]] = [state.colors[j], state.colors[i]];
       }
     });
-    applyColors();
+    commit();
     render();
     handles.refresh();
   });
 
   evenButton.addEventListener("click", () => {
     distributeStops();
-    applyColors();
+    commit();
     render();
   });
 
@@ -279,7 +296,7 @@ export function createColorControls({ panel, state, applyColors, handles }) {
   function applyPalette(hexColors) {
     const kept = hexColors.slice(0, MAX_COLORS);
     state.colors = kept.map((hex, index) => makeColor(hex, index, kept.length));
-    applyColors();
+    commit();
     render();
     handles.refresh();
   }

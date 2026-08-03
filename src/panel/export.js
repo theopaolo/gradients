@@ -8,7 +8,7 @@ import { pick } from "./dom.js";
 export function createExportControls({ panel, state, save }) {
   const formatSelect = pick(panel, ".config-format");
   const sizeSelect = pick(panel, ".config-size");
-  const exportNote = pick(panel, ".config-note");
+  const exportNote = pick(panel, ".config-export-note");
   const exportButton = pick(panel, ".config-export");
   const textCheckbox = pick(panel, ".config-export-text");
 

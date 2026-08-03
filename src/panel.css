@@ -1,0 +1,911 @@
+/* The config panel: a tuning console for the gradient behind it.
+ *
+ * Everything here is one block, `.config-*`, so the JS selectors that reach
+ * into the markup stay findable from the stylesheet and back.
+ */
+
+/* --- Chassis --- */
+
+.config {
+  position: fixed;
+  top: var(--ui-16);
+  right: var(--ui-16);
+  z-index: 10;
+  width: 300px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-chassis);
+  box-shadow: var(--ui-shadow-console);
+  font-family: var(--ui-font);
+  font-size: var(--ui-size);
+  line-height: 1.35;
+  color: var(--ui-fg-soft);
+}
+
+.config.is-hidden {
+  display: none;
+}
+
+/* `:where` keeps this at zero specificity, so a component that names its own
+   colour — the amber primary button most of all — still wins the cascade */
+.config :where(button, input, select, textarea) {
+  font: inherit;
+  color: inherit;
+}
+
+.config :focus-visible {
+  outline: 2px solid var(--ui-accent-border);
+  outline-offset: 1px;
+  border-radius: var(--ui-radius-sm);
+}
+
+/* --- Header --- */
+
+.config-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-8);
+  width: 100%;
+  padding: var(--ui-8) var(--ui-12);
+  cursor: pointer;
+  border: none;
+  border-radius: inherit;
+  background: none;
+  color: var(--ui-fg);
+}
+
+.config-toggle-label {
+  flex: 1;
+  text-align: left;
+}
+
+/* The chevron is the state, so it turns rather than swapping glyphs */
+.config-chevron {
+  transition: transform var(--ui-duration) var(--ui-ease);
+  color: var(--ui-fg-muted);
+}
+
+.config.is-open .config-chevron {
+  transform: rotate(180deg);
+}
+
+.config.is-open .config-toggle {
+  border-bottom: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-lg) var(--ui-radius-lg) 0 0;
+}
+
+/* --- Body --- */
+
+.config-body {
+  padding: var(--ui-12);
+}
+
+.config-body[hidden] {
+  display: none;
+}
+
+/* --- Tabs --- */
+
+/* Eight stacked sections in a 300px column is a two-thousand-pixel scroll, so
+   only one section is ever in the flow. The tab strip is the whole navigation
+   on every screen size. */
+.config-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--ui-2);
+  margin-bottom: var(--ui-12);
+  padding: var(--ui-2);
+  border-radius: var(--ui-radius);
+  background: var(--ui-sunk);
+  box-shadow: var(--ui-shadow-sunk);
+}
+
+.config-tab {
+  padding: var(--ui-6) var(--ui-4);
+  cursor: pointer;
+  border: none;
+  border-radius: var(--ui-radius-sm);
+  background: none;
+  color: var(--ui-fg-muted);
+  font-size: var(--ui-size-sm);
+  transition:
+    color var(--ui-duration) var(--ui-ease),
+    background-color var(--ui-duration) var(--ui-ease);
+}
+
+/* Guarded, because a tap leaves :hover stuck on the control it landed on and a
+   second tab would read as selected until something else was touched */
+@media (hover: hover) {
+  .config-tab:hover {
+    color: var(--ui-fg);
+  }
+}
+
+.config-tab.is-active {
+  color: var(--ui-accent);
+  background: var(--ui-accent-dim);
+  box-shadow: inset 0 0 0 1px rgb(255 200 0 / 22%);
+}
+
+/* --- Sections --- */
+
+.config-section {
+  display: none;
+}
+
+.config-section.is-active {
+  display: block;
+}
+
+/* A rule with the group's name sitting on it, the way a console silkscreens
+   its zones — cheaper than a heading in a panel this narrow. */
+.config-group {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-8);
+  margin: var(--ui-16) 0 var(--ui-8);
+  color: var(--ui-fg-muted);
+  font-size: var(--ui-size-sm);
+}
+
+.config-group::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--ui-border);
+}
+
+.config-group:first-child {
+  margin-top: 0;
+}
+
+/* `display: flex` above would otherwise beat the UA stylesheet's [hidden] */
+.config-group[hidden] {
+  display: none;
+}
+
+.config-count {
+  font-family: var(--ui-font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Style picker --- */
+
+.config-modes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--ui-4);
+}
+
+.config-mode {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-8);
+  padding: var(--ui-6);
+  cursor: pointer;
+  text-align: left;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  background: var(--ui-control);
+  color: var(--ui-fg-muted);
+  font-size: var(--ui-size-sm);
+  box-shadow: var(--ui-shadow-control);
+  transition:
+    color var(--ui-duration) var(--ui-ease),
+    border-color var(--ui-duration) var(--ui-ease);
+}
+
+@media (hover: hover) {
+  .config-mode:hover {
+    color: var(--ui-fg);
+    border-color: var(--ui-border-strong);
+  }
+}
+
+.config-mode.is-active {
+  color: var(--ui-accent-soft);
+  border-color: var(--ui-accent-border);
+  background: linear-gradient(180deg, rgb(255 200 0 / 10%), #131208);
+}
+
+/* Each style previews itself in the palette that is actually loaded: the
+   swatch vars are written onto the list whenever the colors change, so the
+   chips are a legend for the current gradient rather than generic icons. */
+.config-mode-chip {
+  position: relative;
+  flex: none;
+  width: 24px;
+  height: 16px;
+  overflow: hidden;
+  border-radius: var(--ui-radius-sm);
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 45%);
+}
+
+.config-mode[data-mode="linear"] .config-mode-chip {
+  background: linear-gradient(90deg, var(--c1), var(--c2) 55%, var(--c3));
+}
+
+.config-mode[data-mode="radial"] .config-mode-chip {
+  background: radial-gradient(
+    circle at 50% 50%,
+    var(--c1),
+    var(--c2) 55%,
+    var(--c3)
+  );
+}
+
+/* Inset rings paint outward-in, so the first stop is the fill underneath: the
+   ramp runs from the centre out, the way the shader's does */
+.config-mode[data-mode="square"] .config-mode-chip {
+  background: var(--c1);
+  box-shadow:
+    inset 0 0 0 1px rgb(0 0 0 / 45%),
+    inset 0 0 0 3px var(--c3),
+    inset 0 0 0 5px var(--c2);
+}
+
+/* The same ring stack on a square turned 45°, sized off the diagonal so its
+   corners clear the chip */
+.config-mode[data-mode="diamond"] .config-mode-chip::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 26px;
+  height: 26px;
+  margin: -13px 0 0 -13px;
+  transform: rotate(45deg);
+  background: var(--c1);
+  box-shadow:
+    inset 0 0 0 5px var(--c3),
+    inset 0 0 0 8px var(--c2);
+}
+
+.config-mode[data-mode="conic"] .config-mode-chip {
+  background: conic-gradient(
+    from 90deg,
+    var(--c1),
+    var(--c2),
+    var(--c3),
+    var(--c1)
+  );
+}
+
+.config-mode[data-mode="mesh"] .config-mode-chip {
+  background:
+    radial-gradient(circle at 25% 30%, var(--c1) 0 25%, transparent 65%),
+    radial-gradient(circle at 78% 70%, var(--c2) 0 25%, transparent 65%),
+    var(--c3);
+}
+
+.config-mode[data-mode="waves"] .config-mode-chip {
+  background: repeating-linear-gradient(
+    115deg,
+    var(--c1) 0 3px,
+    var(--c2) 3px 6px,
+    var(--c3) 6px 9px
+  );
+}
+
+/* --- Sliders --- */
+
+/* The track is the readout. A comb of ticks runs the full range, the ticks up
+   to the current value are lit, and a bright hairline marks the value itself —
+   so the control is legible at a glance without a thumb sitting on top of it.
+   `--ui-fill` is written by the JS on every input. */
+.config-slider {
+  display: block;
+  --ui-fill: 0%;
+}
+
+.config-slider + .config-slider,
+.config-sliders + .config-field,
+.config-field + .config-field {
+  margin-top: var(--ui-12);
+}
+
+.config-slider[hidden] {
+  display: none;
+}
+
+.config-slider-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--ui-8);
+  margin-bottom: var(--ui-4);
+  font-size: var(--ui-size-sm);
+}
+
+.config-slider-head output {
+  color: var(--ui-accent);
+  font-family: var(--ui-font-mono);
+  font-size: var(--ui-size-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.config-track {
+  position: relative;
+  display: block;
+  height: var(--ui-track-height);
+}
+
+/* Both combs are anchored at the left edge on the same pitch, so the lit one
+   lines its ticks up exactly with the unlit ones it covers */
+.config-track::before,
+.config-track::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(
+    to right,
+    currentcolor 0 1.5px,
+    transparent 1.5px var(--ui-tick-pitch)
+  );
+}
+
+.config-track::before {
+  right: 0;
+  color: rgb(255 255 255 / 22%);
+}
+
+.config-track::after {
+  width: var(--ui-fill);
+  color: var(--ui-accent);
+}
+
+.config-track input[type="range"] {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  cursor: pointer;
+  appearance: none;
+  background: linear-gradient(
+    to right,
+    transparent calc(var(--ui-fill) - 1px),
+    var(--ui-accent-soft) calc(var(--ui-fill) - 1px),
+    var(--ui-accent-soft) calc(var(--ui-fill) + 1px),
+    transparent calc(var(--ui-fill) + 1px)
+  );
+  transition: filter var(--ui-duration) var(--ui-ease);
+}
+
+.config-track input[type="range"]:active,
+.config-track input[type="range"]:focus-visible {
+  filter: drop-shadow(0 0 5px var(--ui-accent-border));
+}
+
+.config-track input[type="range"]:focus-visible {
+  outline-offset: 3px;
+}
+
+/* A 2px thumb keeps the fill and the value within a pixel of each other; the
+   whole track is the hit area either way, since a press anywhere on a range
+   input jumps to that value and carries on dragging. */
+.config-track input[type="range"]::-webkit-slider-thumb {
+  width: 2px;
+  height: var(--ui-track-height);
+  appearance: none;
+  border: none;
+  background: transparent;
+}
+
+.config-track input[type="range"]::-moz-range-thumb {
+  width: 2px;
+  height: var(--ui-track-height);
+  border: none;
+  background: transparent;
+}
+
+.config-track input[type="range"]::-moz-range-track {
+  height: 100%;
+  background: transparent;
+}
+
+/* --- Colors --- */
+
+.config-colors {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-8);
+  list-style: none;
+}
+
+.config-color-head {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-4);
+}
+
+.config-color-head input[type="color"] {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  cursor: pointer;
+  border: none;
+  border-radius: var(--ui-radius);
+  background: none;
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 50%);
+  appearance: none;
+}
+
+.config-color-head input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.config-color-head input[type="color"]::-webkit-color-swatch {
+  border: none;
+  border-radius: var(--ui-radius);
+}
+
+.config-color-head input[type="color"]::-moz-color-swatch {
+  border: none;
+  border-radius: var(--ui-radius);
+}
+
+.config-hex {
+  flex: 1;
+  min-width: 0;
+  height: 26px;
+  padding: 0 var(--ui-8);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  background: var(--ui-sunk);
+  color: var(--ui-fg);
+  font-family: var(--ui-font-mono);
+  font-size: var(--ui-size-sm);
+  box-shadow: var(--ui-shadow-sunk);
+}
+
+.config-hex:focus {
+  border-color: var(--ui-accent-border);
+  outline: none;
+}
+
+.config-grip {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 14px;
+  height: 26px;
+  cursor: grab;
+  border: none;
+  background: none;
+  color: var(--ui-fg-muted);
+  touch-action: none;
+}
+
+.config-grip:focus-visible {
+  color: var(--ui-fg);
+}
+
+@media (hover: hover) {
+  .config-grip:hover {
+    color: var(--ui-fg);
+  }
+}
+
+.config-color.is-dragging {
+  cursor: grabbing;
+  opacity: 0.55;
+}
+
+.config-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  cursor: pointer;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  background: var(--ui-control);
+  color: var(--ui-fg-muted);
+  transition:
+    color var(--ui-duration) var(--ui-ease),
+    border-color var(--ui-duration) var(--ui-ease);
+}
+
+@media (hover: hover) {
+  .config-icon:hover:not(:disabled) {
+    color: var(--ui-danger);
+    border-color: rgb(255 106 94 / 45%);
+  }
+}
+
+.config-icon:disabled {
+  cursor: default;
+  opacity: 0.3;
+}
+
+/* The per-row stop is a shorter comb, so a row reads as one unit rather than
+   as two controls of equal weight. It stays full width because what it sets is
+   a position along the whole ramp. */
+.config-color .config-track {
+  --ui-track-height: 10px;
+
+  margin-top: var(--ui-4);
+}
+
+/* --- Buttons --- */
+
+.config-row {
+  display: flex;
+  gap: var(--ui-4);
+  margin-top: var(--ui-8);
+}
+
+.config-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ui-6);
+  min-height: 28px;
+  padding: 0 var(--ui-8);
+  cursor: pointer;
+  white-space: nowrap;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  background: var(--ui-control);
+  color: var(--ui-fg-soft);
+  font-size: var(--ui-size-sm);
+  box-shadow: var(--ui-shadow-control);
+  transition:
+    background var(--ui-duration) var(--ui-ease),
+    border-color var(--ui-duration) var(--ui-ease),
+    color var(--ui-duration) var(--ui-ease);
+}
+
+@media (hover: hover) {
+  .config-btn:hover:not(:disabled) {
+    background: var(--ui-control-hover);
+    border-color: var(--ui-border-strong);
+    color: var(--ui-fg);
+  }
+}
+
+.config-btn:active:not(:disabled) {
+  background: var(--ui-sunk);
+  box-shadow: var(--ui-shadow-sunk);
+}
+
+.config-btn:disabled {
+  cursor: default;
+  opacity: 0.35;
+}
+
+.config-btn[hidden] {
+  display: none;
+}
+
+/* A row whose only button is currently irrelevant leaves its gap behind */
+.config-row:has(> .config-btn[hidden]:only-child) {
+  display: none;
+}
+
+/* One primary per section, and it is the one that produces a file */
+.config-btn-primary {
+  min-height: 32px;
+  border-color: transparent;
+  background: linear-gradient(180deg, var(--ui-accent-soft), var(--ui-accent));
+  color: #1a1400;
+  font-size: var(--ui-size);
+  font-weight: 600;
+}
+
+@media (hover: hover) {
+  .config-btn-primary:hover:not(:disabled) {
+    background: linear-gradient(180deg, #fff0b0, var(--ui-accent-soft));
+    border-color: transparent;
+    color: #1a1400;
+  }
+}
+
+.config-btn-wide {
+  width: 100%;
+  margin-top: var(--ui-12);
+}
+
+/* --- Checkboxes --- */
+
+.config-check {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-8);
+  padding: var(--ui-4) 0;
+  cursor: pointer;
+  font-size: var(--ui-size-sm);
+}
+
+.config-check + .config-check {
+  padding-top: 0;
+}
+
+.config-check input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.config-check-box {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  border: 1px solid var(--ui-border-strong);
+  border-radius: var(--ui-radius-sm);
+  background: var(--ui-sunk);
+  color: transparent;
+  box-shadow: var(--ui-shadow-sunk);
+  transition:
+    background-color var(--ui-duration) var(--ui-ease),
+    border-color var(--ui-duration) var(--ui-ease);
+}
+
+.config-check input:checked + .config-check-box {
+  border-color: var(--ui-accent-border);
+  background: var(--ui-accent);
+  color: #1a1400;
+}
+
+.config-check input:focus-visible + .config-check-box {
+  outline: 2px solid var(--ui-accent-border);
+  outline-offset: 2px;
+}
+
+/* --- Fields --- */
+
+.config-field {
+  display: block;
+}
+
+.config-field-label {
+  display: block;
+  margin-bottom: var(--ui-4);
+  color: var(--ui-fg-muted);
+  font-size: var(--ui-size-sm);
+}
+
+.config-field select,
+.config-field textarea {
+  display: block;
+  width: 100%;
+  padding: var(--ui-6) var(--ui-8);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  background: var(--ui-sunk);
+  color: var(--ui-fg);
+  font-size: var(--ui-size-sm);
+  box-shadow: var(--ui-shadow-sunk);
+}
+
+.config-field textarea {
+  resize: vertical;
+  line-height: 1.4;
+}
+
+.config-field select {
+  cursor: pointer;
+  appearance: none;
+  padding-right: var(--ui-20);
+  /* A drawn chevron, because the platform's own arrow renders light-on-light */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23f0f0f0' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' opacity='.62'%3E%3Cpath d='M4 6.5 8 10.5l4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--ui-6) center;
+  background-size: 14px;
+}
+
+.config-field select option {
+  background: var(--ui-ink);
+  color: var(--ui-fg);
+}
+
+.config-field select:focus,
+.config-field textarea:focus {
+  border-color: var(--ui-accent-border);
+  outline: none;
+}
+
+/* --- Notes --- */
+
+.config-note {
+  margin-top: var(--ui-8);
+  color: var(--ui-fg-muted);
+  font-size: var(--ui-size-sm);
+  line-height: 1.45;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Footer --- */
+
+.config-footer {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-8);
+  margin-top: var(--ui-16);
+  padding-top: var(--ui-8);
+  border-top: 1px solid var(--ui-border);
+  color: var(--ui-fg-muted);
+  font-size: var(--ui-size-sm);
+}
+
+.config-hint {
+  flex: 1;
+}
+
+.config-hint kbd {
+  padding: 1px var(--ui-4);
+  border: 1px solid var(--ui-border-strong);
+  border-radius: var(--ui-radius-sm);
+  font: inherit;
+  font-family: var(--ui-font-mono);
+}
+
+.config-reset {
+  flex: none;
+  /* Holds the right edge once the keyboard hint drops out on touch */
+  margin-left: auto;
+  min-height: 24px;
+  padding: 0 var(--ui-8);
+  cursor: pointer;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  background: none;
+  color: var(--ui-fg-muted);
+  font-size: var(--ui-size-sm);
+  transition:
+    color var(--ui-duration) var(--ui-ease),
+    border-color var(--ui-duration) var(--ui-ease);
+}
+
+@media (hover: hover) {
+  .config-reset:hover {
+    color: var(--ui-danger);
+    border-color: rgb(255 106 94 / 45%);
+  }
+}
+
+/* --- Icons --- */
+
+.config-svg {
+  display: block;
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.config-svg-fill {
+  fill: currentcolor;
+  stroke: none;
+}
+
+/* --- Drop target --- */
+
+/* The canvas fills the window, so a dragged file can be dropped anywhere and
+   the cue for it has to sit at that scale rather than inside the panel. */
+body.is-dropping::after {
+  content: "";
+  position: fixed;
+  inset: var(--ui-8);
+  z-index: 20;
+  pointer-events: none;
+  border: 2px solid var(--ui-accent);
+  border-radius: var(--ui-radius);
+}
+
+/* --- Narrow screens: the panel becomes a bottom sheet --- */
+
+@media (max-width: 767px) {
+  .config {
+    top: auto;
+    right: var(--ui-8);
+    bottom: var(--ui-8);
+    left: var(--ui-8);
+    width: auto;
+    font-size: 13px;
+  }
+
+  .config-toggle {
+    padding: var(--ui-12);
+  }
+
+  .config-body {
+    max-height: 60vh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-bottom: calc(var(--ui-12) + env(safe-area-inset-bottom));
+    scrollbar-width: thin;
+    scrollbar-color: rgb(255 255 255 / 20%) transparent;
+  }
+
+  /* Touch targets */
+  .config-tab,
+  .config-mode {
+    padding: var(--ui-8) var(--ui-6);
+  }
+
+  .config-btn,
+  .config-reset {
+    min-height: 36px;
+  }
+
+  .config-icon,
+  .config-grip,
+  .config-color-head input[type="color"] {
+    height: 34px;
+  }
+
+  .config-grip {
+    width: 20px;
+  }
+
+  .config-hex {
+    height: 34px;
+  }
+
+  .config-check-box {
+    width: 18px;
+    height: 18px;
+  }
+
+  .config-field select,
+  .config-field textarea {
+    padding: var(--ui-8);
+    font-size: 16px; /* iOS zooms the page in on anything smaller */
+  }
+
+  .config-track {
+    --ui-track-height: 28px;
+  }
+
+  .config-color .config-track {
+    --ui-track-height: 20px;
+  }
+
+  /* Keyboard-only affordances */
+  .config-hint {
+    display: none;
+  }
+}
+
+/* --- Desktop: the body scrolls inside the chassis if a tab runs long --- */
+
+@media (min-width: 768px) {
+  /* Closed, the console has nothing to hold open: it shrinks to the button so
+     the artwork keeps the corner. The sheet layout anchors left and right
+     instead, so this only concerns the floating panel. */
+  .config {
+    width: max-content;
+  }
+
+  .config.is-open {
+    width: 300px;
+  }
+
+  .config-body {
+    max-height: calc(100vh - 80px);
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgb(255 255 255 / 20%) transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .config *,
+  .config *::before,
+  .config *::after {
+    transition-duration: 1ms;
+  }
+}

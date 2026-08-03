@@ -1,0 +1,80 @@
+/* Interface tokens for the config panel.
+ *
+ * The panel is a console laid over the artwork, so its surfaces are opaque and
+ * near-black rather than translucent: a glass panel takes the tint of whatever
+ * gradient is behind it, and every colour judgement made inside it — a swatch,
+ * a hex field, a grain amount — would then be made against a ground that moves.
+ * The vocabulary is shared with Paletcam, the tool whose palette exports this
+ * one reads, so the two feel like parts of the same rig.
+ *
+ * Prefixed `--ui-` because `:root` already carries the page's own type tokens,
+ * which the panel writes to and must not collide with.
+ */
+
+:root {
+  /* Surfaces */
+  --ui-shell: #0c0c0c;
+  --ui-ink: #111;
+  --ui-raised: #1b1b1b;
+  --ui-sunk: #070707;
+
+  /* Text */
+  --ui-fg: #f0f0f0;
+  --ui-fg-soft: rgb(240 240 240 / 88%);
+  --ui-fg-muted: rgb(240 240 240 / 62%);
+
+  /* Borders */
+  --ui-border: rgb(255 255 255 / 10%);
+  --ui-border-strong: rgb(255 255 255 / 18%);
+
+  /* Accent — one amber, used for the current value, the current selection and
+     the primary action. Never for decoration. */
+  --ui-accent: #ffc800;
+  --ui-accent-soft: #ffe06d;
+  --ui-accent-dim: rgb(255 200 0 / 10%);
+  --ui-accent-border: rgb(255 200 0 / 55%);
+
+  --ui-danger: #ff6a5e;
+
+  /* Machined surfaces */
+  --ui-chassis: linear-gradient(180deg, #151515, #0b0b0b 55%, #101010);
+  --ui-control: linear-gradient(180deg, #1e1e1e, #131313);
+  --ui-control-hover: linear-gradient(180deg, #262626, #181818);
+
+  --ui-shadow-console:
+    0 24px 60px rgb(0 0 0 / 45%), 0 2px 8px rgb(0 0 0 / 35%),
+    inset 0 1px 0 rgb(255 255 255 / 7%);
+  --ui-shadow-control:
+    inset 0 1px 0 rgb(255 255 255 / 7%), 0 1px 2px rgb(0 0 0 / 45%);
+  --ui-shadow-sunk:
+    inset 0 1px 3px rgb(0 0 0 / 80%), inset 0 -1px 0 rgb(255 255 255 / 4%);
+
+  /* Spacing — 4px grid */
+  --ui-2: 2px;
+  --ui-4: 4px;
+  --ui-6: 6px;
+  --ui-8: 8px;
+  --ui-12: 12px;
+  --ui-16: 16px;
+  --ui-20: 20px;
+
+  /* Radii */
+  --ui-radius-sm: 2px;
+  --ui-radius: 4px;
+  --ui-radius-lg: 8px;
+
+  /* Type — SN Pro is already in the project and is Paletcam's interface face.
+     Measurements read in a mono so digits hold their column while dragging. */
+  --ui-font: "SN Pro", system-ui, sans-serif;
+  --ui-font-mono: ui-monospace, "SF Mono", "SFMono-Regular", Menlo, monospace;
+  --ui-size-xs: 10px;
+  --ui-size-sm: 11px;
+  --ui-size: 12px;
+
+  /* The comb pitch every slider track is drawn on */
+  --ui-tick-pitch: 6px;
+  --ui-track-height: 18px;
+
+  --ui-duration: 140ms;
+  --ui-ease: cubic-bezier(0.2, 0.6, 0.3, 1);
+}

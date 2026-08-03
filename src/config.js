@@ -10,7 +10,7 @@ import {
 import { state, save, clearSaved } from "./persistence.js";
 import { createHandles } from "./handles.js";
 import { playIntro } from "./motion.js";
-import { pick } from "./panel/dom.js";
+import { pick, iconHTML } from "./panel/dom.js";
 import { createColorControls } from "./panel/colors.js";
 import { createSliderControls } from "./panel/sliders.js";
 import { createExportControls } from "./panel/export.js";
@@ -26,115 +26,126 @@ function applyColors() {
 
 // --- Markup ---
 
+// A checkbox the panel can actually style: the real input stays in the
+// accessibility tree and takes focus, the drawn box next to it takes the paint.
+const check = (className, label) => `
+  <label class="config-check">
+    <input type="checkbox" class="${className}">
+    <span class="config-check-box">${iconHTML("check")}</span>
+    <span>${label}</span>
+  </label>
+`;
+
 const panel = document.createElement("div");
 panel.className = "config";
 panel.innerHTML = `
-  <button type="button" class="config-toggle" aria-expanded="false" aria-controls="config-body">Config</button>
+  <button type="button" class="config-toggle" aria-expanded="false" aria-controls="config-body">
+    ${iconHTML("sliders")}
+    <span class="config-toggle-label">Tune</span>
+    <span class="config-chevron">${iconHTML("chevron")}</span>
+  </button>
+
   <div class="config-body" id="config-body" hidden>
-    <nav class="config-tabs" aria-label="Panel sections"></nav>
+    <div class="config-tabs" role="tablist" aria-label="Panel sections"></div>
 
     <section class="config-section" data-tab="Style">
-      <h2>Style</h2>
+      <p class="config-group">Gradient style</p>
       <div class="config-modes"></div>
+
+      <p class="config-group">Shape</p>
       <div class="config-sliders" data-group="shape"></div>
+
+      <p class="config-group">Canvas</p>
+      ${check("config-mouse", "Follow the pointer")}
+      ${check("config-show-handles", "Show drag handles")}
     </section>
 
     <section class="config-section" data-tab="Colors">
-      <h2>Colors <span class="config-count"></span></h2>
+      <p class="config-group">Palette <span class="config-count"></span></p>
       <ul class="config-colors"></ul>
       <div class="config-row">
-        <button type="button" class="config-add">Add</button>
-        <button type="button" class="config-reverse">Reverse</button>
-        <button type="button" class="config-shuffle">Shuffle</button>
-        <button type="button" class="config-even" hidden>Even stops</button>
+        <button type="button" class="config-btn config-add">${iconHTML("plus")}Add</button>
+        <button type="button" class="config-btn config-reverse">Reverse</button>
+        <button type="button" class="config-btn config-shuffle">Shuffle</button>
       </div>
       <div class="config-row">
-        <button type="button" class="config-import">Palette from image…</button>
+        <button type="button" class="config-btn config-even" hidden>Space stops evenly</button>
+      </div>
+
+      <p class="config-group">From an image</p>
+      <div class="config-row">
+        <button type="button" class="config-btn config-import">Read a palette from a file…</button>
       </div>
       <input type="file" class="config-import-input" accept="image/*" hidden>
-      <p class="config-import-note">
+      <p class="config-note config-import-note">
         Drop a Color Catchers export anywhere on the page to build a gradient
         from the palette it carries.
       </p>
     </section>
 
     <section class="config-section" data-tab="Texture">
-      <h2>Texture</h2>
-      <label class="config-toggle-row">
-        <input type="checkbox" class="config-grain">
-        <span>Film grain</span>
-      </label>
-      <div class="config-sliders" data-group="texture"></div>
+      <p class="config-group">Grain</p>
+      ${check("config-grain", "Overlay film grain")}
+      <div class="config-sliders" data-group="grain"></div>
+
+      <p class="config-group">Warp</p>
+      <div class="config-sliders" data-group="warp"></div>
     </section>
 
     <section class="config-section" data-tab="Motion">
-      <h2>Motion</h2>
+      <p class="config-group">Animation</p>
       <div class="config-sliders" data-group="motion"></div>
     </section>
 
-    <section class="config-section" data-tab="Interact">
-      <h2>Interaction</h2>
-      <label class="config-toggle-row">
-        <input type="checkbox" class="config-mouse">
-        <span>Mouse interactivity</span>
-      </label>
-      <label class="config-toggle-row">
-        <input type="checkbox" class="config-show-handles">
-        <span>On-canvas handles</span>
-      </label>
-    </section>
-
-    <section class="config-section" data-tab="Export">
-      <h2>Export</h2>
-      <label class="config-field">
-        <span>Format</span>
-        <select class="config-format"></select>
-      </label>
-      <label class="config-field">
-        <span>Short edge</span>
-        <select class="config-size"></select>
-      </label>
-      <label class="config-toggle-row">
-        <input type="checkbox" class="config-export-text">
-        <span>Include title and paragraph</span>
-      </label>
-      <p class="config-note"></p>
-      <button type="button" class="config-export">Export PNG</button>
-    </section>
-
     <section class="config-section" data-tab="Text">
-      <h2>Text</h2>
+      <p class="config-group">Copy</p>
       <label class="config-field">
-        <span>Title (one line per row)</span>
-        <textarea class="config-title" rows="3" spellcheck="false"></textarea>
+        <span class="config-field-label">Title — one line per row</span>
+        <textarea class="config-title" rows="2" spellcheck="false"></textarea>
       </label>
       <label class="config-field">
-        <span>Paragraph</span>
-        <textarea class="config-paragraph" rows="3" spellcheck="false"></textarea>
+        <span class="config-field-label">Paragraph</span>
+        <textarea class="config-paragraph" rows="2" spellcheck="false"></textarea>
       </label>
+
+      <p class="config-group">Type</p>
       <label class="config-field">
-        <span>Font</span>
+        <span class="config-field-label">Font</span>
         <select class="config-font"></select>
       </label>
       <div class="config-sliders" data-group="text"></div>
-      <label class="config-field">
-        <span>Color</span>
-      </label>
+
+      <p class="config-group">Color</p>
       <div class="config-color-head">
         <input type="color" class="config-text-color" aria-label="Text color">
         <input type="text" class="config-hex config-text-hex" spellcheck="false" aria-label="Text color hex value">
       </div>
-      <button type="button" class="config-replay">Replay intro animation</button>
+
+      <button type="button" class="config-btn config-btn-wide config-replay">Replay the intro</button>
     </section>
 
-    <section class="config-section" data-tab="More">
-      <button type="button" class="config-reset">Reset to defaults</button>
+    <section class="config-section" data-tab="Export">
+      <p class="config-group">Image</p>
+      <label class="config-field">
+        <span class="config-field-label">Format</span>
+        <select class="config-format"></select>
+      </label>
+      <label class="config-field">
+        <span class="config-field-label">Short edge</span>
+        <select class="config-size"></select>
+      </label>
+      ${check("config-export-text", "Include the title and paragraph")}
+      <p class="config-note config-export-note"></p>
+      <button type="button" class="config-btn config-btn-primary config-btn-wide config-export">Export PNG</button>
     </section>
 
-    <p class="config-hint">
-      <kbd>${HIDE_KEY.toUpperCase()}</kbd> hides this panel,
-      <kbd>${REPLAY_KEY.toUpperCase()}</kbd> replays the intro
-    </p>
+    <div class="config-footer">
+      <p class="config-hint">
+        <kbd>${HIDE_KEY.toUpperCase()}</kbd> hides the panel ·
+        <kbd>${REPLAY_KEY.toUpperCase()}</kbd> replays the intro
+      </p>
+      <button type="button" class="config-reset">Reset</button>
+    </div>
   </div>
 `;
 document.body.appendChild(panel);
@@ -149,38 +160,66 @@ const resetButton = pick(panel, ".config-reset");
 
 // --- Panel open / close / hide ---
 
-toggleButton.addEventListener("click", () => {
-  const open = body.hasAttribute("hidden");
+function setOpen(open) {
   body.toggleAttribute("hidden", !open);
+  panel.classList.toggle("is-open", open);
   toggleButton.setAttribute("aria-expanded", String(open));
-});
+}
 
-// --- Sections ---
+toggleButton.addEventListener("click", () =>
+  setOpen(body.hasAttribute("hidden")),
+);
 
-// One long scroll is fine in the desktop sidebar but miserable on a phone, so
-// the sheet shows a single section at a time. Which one is visible is decided
-// purely in CSS from `is-active`, so the desktop layout ignores all of this and
-// keeps every section on screen.
+// --- Tabs ---
+
+// Six sections stacked in a 300px column is a two-thousand-pixel scroll, so
+// only one is ever in the flow — on the desktop panel as much as on the phone
+// sheet, where the scroll was worse but the problem was the same.
 const tabList = pick(panel, ".config-tabs");
 const sections = [...panel.querySelectorAll(".config-section")];
+const tabs = [];
 
 function setTab(index) {
   sections.forEach((section, i) =>
     section.classList.toggle("is-active", i === index),
   );
-  tabList.querySelectorAll(".config-tab").forEach((button, i) => {
-    button.classList.toggle("is-active", i === index);
-    button.setAttribute("aria-pressed", String(i === index));
+  tabs.forEach((tab, i) => {
+    tab.classList.toggle("is-active", i === index);
+    tab.setAttribute("aria-selected", String(i === index));
+    // Only the current tab is a tab stop; the arrow keys move between them
+    tab.tabIndex = i === index ? 0 : -1;
   });
 }
 
 sections.forEach((section, index) => {
+  const name = section.dataset.tab;
+  const id = `config-tab-${name.toLowerCase()}`;
+
   const button = document.createElement("button");
   button.type = "button";
+  button.id = id;
   button.className = "config-tab";
-  button.textContent = section.dataset.tab;
+  button.setAttribute("role", "tab");
+  button.textContent = name;
   button.addEventListener("click", () => setTab(index));
+
+  section.id = `config-panel-${name.toLowerCase()}`;
+  section.setAttribute("role", "tabpanel");
+  section.setAttribute("aria-labelledby", id);
+  button.setAttribute("aria-controls", section.id);
+
   tabList.appendChild(button);
+  tabs.push(button);
+});
+
+tabList.addEventListener("keydown", (event) => {
+  const offset = { ArrowLeft: -1, ArrowRight: 1 }[event.key];
+  if (!offset) return;
+  event.preventDefault();
+  const current = tabs.indexOf(document.activeElement);
+  const next = (current + offset + tabs.length) % tabs.length;
+  setTab(next);
+  tabs[next].focus();
 });
 
 setTab(0);
@@ -218,6 +257,7 @@ const handles = createHandles({
   // no hint and the DOM is left alone.
   onColorsChange: (hint) => {
     applyColors();
+    syncModeChips();
     if (hint?.row != null) ui.colors.syncRow(hint.row);
   },
   onOriginChange: () => {
@@ -232,7 +272,13 @@ const handles = createHandles({
   },
 });
 
-ui.colors = createColorControls({ panel, state, applyColors, handles });
+ui.colors = createColorControls({
+  panel,
+  state,
+  applyColors,
+  handles,
+  onPaletteChange: () => syncModeChips(),
+});
 ui.sliders = createSliderControls({
   panel,
   state,
@@ -291,8 +337,7 @@ window.addEventListener("drop", (event) => {
   // An image with no palette in it changes nothing on screen, so the note
   // saying so has to be visible before the read even starts.
   panel.classList.remove("is-hidden");
-  body.removeAttribute("hidden");
-  toggleButton.setAttribute("aria-expanded", "true");
+  setOpen(true);
   setTab(colorsTab);
 
   ui.colors.importFile(file);
@@ -305,7 +350,14 @@ MODES.forEach(({ id, label }) => {
   button.type = "button";
   button.className = "config-mode";
   button.dataset.mode = id;
-  button.textContent = label;
+
+  const chip = document.createElement("span");
+  chip.className = "config-mode-chip";
+
+  const name = document.createElement("span");
+  name.textContent = label;
+
+  button.append(chip, name);
   button.addEventListener("click", () => {
     state.mode = id;
     setMode(id);
@@ -317,6 +369,15 @@ MODES.forEach(({ id, label }) => {
   });
   modeList.appendChild(button);
 });
+
+// Every style chip previews itself in the palette that is actually loaded, so
+// the picker doubles as a legend for what the current colors do in each one.
+function syncModeChips() {
+  const [first, second, third] = state.colors;
+  modeList.style.setProperty("--c1", first.hex);
+  modeList.style.setProperty("--c2", (second ?? first).hex);
+  modeList.style.setProperty("--c3", (third ?? second ?? first).hex);
+}
 
 function renderModes() {
   modeList.querySelectorAll(".config-mode").forEach((button) => {
@@ -365,6 +426,7 @@ setMouseEnabled(state.mouseEnabled);
 Object.entries(state.params).forEach(([name, value]) => setParam(name, value));
 
 renderModes();
+syncModeChips();
 ui.colors.render();
 ui.sliders.sync();
 ui.sliders.syncVisibility();
