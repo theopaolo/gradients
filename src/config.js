@@ -74,18 +74,17 @@ panel.innerHTML = `
 
       <p class="config-group">From an image</p>
       <div class="config-row">
-        <button type="button" class="config-btn config-import">Read a palette from a file…</button>
+        <button type="button" class="config-btn config-import">Choose an image…</button>
       </div>
       <input type="file" class="config-import-input" accept="image/*" hidden>
       <p class="config-note config-import-note">
-        Drop a Color Catchers export anywhere on the page to build a gradient
-        from the palette it carries.
+        Drop a Color Catchers export anywhere on the page to load its palette.
       </p>
     </section>
 
     <section class="config-section" data-tab="Texture">
       <p class="config-group">Grain</p>
-      ${check("config-grain", "Overlay film grain")}
+      ${check("config-grain", "Show film grain")}
       <div class="config-sliders" data-group="grain"></div>
 
       <p class="config-group">Warp</p>
@@ -93,14 +92,13 @@ panel.innerHTML = `
     </section>
 
     <section class="config-section" data-tab="Motion">
-      <p class="config-group">Animation</p>
       <div class="config-sliders" data-group="motion"></div>
     </section>
 
     <section class="config-section" data-tab="Text">
       <p class="config-group">Copy</p>
       <label class="config-field">
-        <span class="config-field-label">Title — one line per row</span>
+        <span class="config-field-label">Title (one line per row)</span>
         <textarea class="config-title" rows="2" spellcheck="false"></textarea>
       </label>
       <label class="config-field">
@@ -125,7 +123,6 @@ panel.innerHTML = `
     </section>
 
     <section class="config-section" data-tab="Export">
-      <p class="config-group">Image</p>
       <label class="config-field">
         <span class="config-field-label">Format</span>
         <select class="config-format"></select>
@@ -141,7 +138,7 @@ panel.innerHTML = `
 
     <div class="config-footer">
       <p class="config-hint">
-        <kbd>${HIDE_KEY.toUpperCase()}</kbd> hides the panel ·
+        <kbd>${HIDE_KEY.toUpperCase()}</kbd> hides the panel,
         <kbd>${REPLAY_KEY.toUpperCase()}</kbd> replays the intro
       </p>
       <button type="button" class="config-reset">Reset</button>

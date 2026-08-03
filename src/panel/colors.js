@@ -85,7 +85,7 @@ export function createColorControls({
     grip.appendChild(icon("grip"));
     grip.setAttribute(
       "aria-label",
-      `Reorder color ${index + 1} — drag, or use the arrow keys`,
+      `Reorder color ${index + 1} (drag or use the arrow keys)`,
     );
 
     grip.addEventListener("pointerdown", (event) => {
@@ -308,13 +308,13 @@ export function createColorControls({
     try {
       colors = await readPaletteFromImage(file);
     } catch (error) {
-      importNote.textContent = `Could not read that file — ${error.message}`;
+      importNote.textContent = `Could not read that file: ${error.message}`;
       return;
     }
 
     if (!colors) {
       importNote.textContent =
-        "No palette in that file. Messaging and social apps re-encode on upload and drop the metadata — move an export as a file.";
+        "No palette in that file. Messaging and social apps re-encode on upload and strip the metadata, so send the export as a file attachment.";
       return;
     }
 

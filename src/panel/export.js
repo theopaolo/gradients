@@ -53,8 +53,8 @@ export function createExportControls({ panel, state, save }) {
     const { width, height, clamped } = exportSize();
     const inches = (px) => (px / PRINT_DPI).toFixed(1);
     exportNote.textContent = clamped
-      ? `${width} × ${height} px — clamped to this GPU's ${maxExportSize()} px limit`
-      : `${width} × ${height} px · ${inches(width)} × ${inches(height)} in at ${PRINT_DPI} dpi`;
+      ? `${width} × ${height} px, clamped to this GPU's ${maxExportSize()} px limit`
+      : `${width} × ${height} px, ${inches(width)} × ${inches(height)} in at ${PRINT_DPI} dpi`;
   }
 
   formatSelect.addEventListener("change", () => {

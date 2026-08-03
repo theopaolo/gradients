@@ -27,7 +27,7 @@ export const SLIDERS = [
   {
     group: "shape",
     name: "softness",
-    label: "Blend easing",
+    label: "Softness",
     min: 0,
     max: 1,
     step: 0.01,
@@ -36,7 +36,7 @@ export const SLIDERS = [
   {
     group: "shape",
     name: "blobSharpness",
-    label: "Blob falloff",
+    label: "Blob sharpness",
     min: 0.5,
     max: 12,
     step: 0.1,
@@ -116,11 +116,11 @@ export const FORMATS = [
 ];
 
 export const SIZES = [
-  { value: 1080, label: "1080 — social" },
+  { value: 1080, label: "1080 (social)" },
   { value: 1440, label: "1440" },
   { value: 2160, label: "2160" },
-  { value: 3240, label: "3240 — print" },
-  { value: 4096, label: "4096 — print" },
+  { value: 3240, label: "3240 (print)" },
+  { value: 4096, label: "4096 (print)" },
 ];
 
 export const PRINT_DPI = 300;
