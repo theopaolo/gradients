@@ -1,4 +1,7 @@
 import { animate, spring, stagger } from "motion";
+import { TITLE_SELECTOR, PARAGRAPH_SELECTOR } from "./constants.js";
+
+const TITLE_LINE_SELECTOR = `${TITLE_SELECTOR} span`;
 
 const INTRO_DELAY = 500;
 
@@ -12,13 +15,13 @@ let introTimer;
 // Elements are queried on every run so the intro still works after the config
 // panel rebuilds the title lines.
 const introElements = () => [
-  ...document.querySelectorAll(".smooth-web span"),
-  document.querySelector(".p-container p"),
+  ...document.querySelectorAll(TITLE_LINE_SELECTOR),
+  document.querySelector(PARAGRAPH_SELECTOR),
 ];
 
 function runIntro() {
-  const smoothWebSpans = document.querySelectorAll(".smooth-web span");
-  const introP = document.querySelector(".p-container p");
+  const smoothWebSpans = document.querySelectorAll(TITLE_LINE_SELECTOR);
+  const introP = document.querySelector(PARAGRAPH_SELECTOR);
 
   // The start value has to be an explicit keyframe rather than a style reset:
   // Motion animates from its own cached value for each element, which writing

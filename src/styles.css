@@ -370,12 +370,24 @@ canvas {
   accent-color: #4a4ac8;
 }
 
-.config-note {
+.config-note,
+.config-import-note {
   margin-top: 8px;
   font-size: 11px;
   line-height: 1.4;
   opacity: 0.55;
   font-variant-numeric: tabular-nums;
+}
+
+/* The canvas fills the window, so a dragged file can be dropped anywhere and
+   the cue for it has to sit at that scale rather than inside the panel. */
+body.is-dropping::after {
+  content: "";
+  position: fixed;
+  inset: 8px;
+  z-index: 20;
+  pointer-events: none;
+  border: 2px solid #4a4ac8;
 }
 
 .config-export,
@@ -580,7 +592,9 @@ canvas {
   border: 2px solid rgba(255, 255, 255, 0.9);
   border-radius: 50%;
   background: var(--handle-color, transparent);
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.25);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.35),
+    0 2px 8px rgba(0, 0, 0, 0.25);
   touch-action: none;
 }
 

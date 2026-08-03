@@ -6,14 +6,16 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "format": "prettier --write \"src/**/*.{js,css}\" index.html",
+    "format:check": "prettier --check \"src/**/*.{js,css}\" index.html"
   },
   "devDependencies": {
+    "prettier": "^3.9.6",
     "vite": "^6.2.0"
   },
   "dependencies": {
     "motion": "^12.6.2",
-    "three": "^0.175.0",
-    "tone": "^15.0.4"
+    "three": "^0.175.0"
   }
 }

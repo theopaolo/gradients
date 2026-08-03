@@ -1,5 +1,6 @@
 const fragmentShader = `
 #define MAX_COLORS 8
+#define WAVE_COLORS 4
 #define TAU 6.28318530718
 
 varying vec2 vUv;            // 0-1 across the viewport
@@ -14,14 +15,23 @@ uniform float mouseInfluence; // 0.0 when mouse interactivity is off
 // carry real data. GLSL ES 1.0 forbids indexing a uniform array with a value
 // the compiler cannot fold, so every read below happens inside a loop with
 // constant bounds (a loop index counts as a constant-index-expression).
+//
+// Colors arrive already in OKLab — see color.js. They are uniform constants, so
+// converting them here would mean redoing the same eight conversions for every
+// pixel of every frame.
 uniform vec3 colors[MAX_COLORS];
 uniform vec2 positions[MAX_COLORS]; // blob centre in uv space, mesh mode
 uniform float radii[MAX_COLORS];    // blob radius, mesh mode
 uniform float stops[MAX_COLORS];    // ramp position 0-1, ramp modes
 uniform int colorCount;
 
+// Wave mode reads four slots in a fixed cycle regardless of how many colors
+// exist, so the wrap is resolved on the CPU and arrives pre-expanded.
+uniform vec3 waveColors[WAVE_COLORS];
+
 // --- Mode switches ---------------------------------------------------------
-uniform int mode;        // 0 linear 1 radial 2 square 3 diamond 4 conic 5 mesh 6 waves
+// The MODE_* values are injected from the MODES array in constants.js.
+uniform int mode;
 uniform bool grainEnabled;
 
 // --- Shape -----------------------------------------------------------------
@@ -46,27 +56,9 @@ uniform float orbitRadius;
 // Color spaces
 // ---------------------------------------------------------------------------
 
-vec3 srgbToLinear(vec3 c) {
-    return mix(c / 12.92, pow((c + 0.055) / 1.055, vec3(2.4)), step(0.04045, c));
-}
-
 vec3 linearToSrgb(vec3 c) {
     c = max(c, 0.0);
     return mix(c * 12.92, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055, step(0.0031308, c));
-}
-
-vec3 linearToOklab(vec3 c) {
-    vec3 lms = vec3(
-        dot(c, vec3(0.4122214708, 0.5363325363, 0.0514459929)),
-        dot(c, vec3(0.2119034982, 0.6806995451, 0.1073969566)),
-        dot(c, vec3(0.0883024619, 0.2817188376, 0.6299787005))
-    );
-    lms = pow(max(lms, 0.0), vec3(1.0 / 3.0));
-    return vec3(
-        dot(lms, vec3(0.2104542553, 0.7936177850, -0.0040720468)),
-        dot(lms, vec3(1.9779984951, -2.4285922050, 0.4505937099)),
-        dot(lms, vec3(0.0259040371, 0.7827717662, -0.8086757660))
-    );
 }
 
 vec3 oklabToLinear(vec3 lab) {
@@ -83,13 +75,8 @@ vec3 oklabToLinear(vec3 lab) {
     );
 }
 
-// Palette entries arrive as sRGB, but every mix happens in OKLab: alone among
-// the usual spaces it holds perceived lightness steady across a blend, so no
-// pair of colors greys out through its midpoint.
-vec3 toBlend(vec3 srgb) {
-    return linearToOklab(srgbToLinear(srgb));
-}
-
+// The one conversion that genuinely varies per pixel: the blended result on its
+// way back out to the framebuffer.
 vec3 fromBlend(vec3 lab) {
     return linearToSrgb(oklabToLinear(lab));
 }
@@ -128,16 +115,6 @@ float fbm(vec2 p) {
 // Palette lookups
 // ---------------------------------------------------------------------------
 
-// Wrapping fetch used by the wave mode, which reads more slots than exist.
-vec3 paletteWrap(int i) {
-    int index = int(mod(float(i), float(colorCount)));
-    vec3 found = colors[0];
-    for (int k = 0; k < MAX_COLORS; k++) {
-        if (k == index) found = colors[k];
-    }
-    return found;
-}
-
 // 0 keeps segment edges crisp and linear, 1 eases them into each other.
 float shapeBlend(float f) {
     return mix(f, f * f * (3.0 - 2.0 * f), clamp(softness, 0.0, 1.0));
@@ -155,19 +132,19 @@ vec3 sampleRamp(float t, bool cyclic) {
     float reserve = cyclic ? 1.0 / float(colorCount) : 0.0;
     float lookup = t / max(1.0 - reserve, 0.0001);
 
-    vec3 col = toBlend(colors[0]);
+    vec3 col = colors[0];
 
     for (int i = 0; i < MAX_COLORS - 1; i++) {
         if (i + 1 >= colorCount) break;
         float from = stops[i];
         float to = stops[i + 1];
         float f = clamp((lookup - from) / max(to - from, 0.0001), 0.0, 1.0);
-        col = mix(col, toBlend(colors[i + 1]), shapeBlend(f));
+        col = mix(col, colors[i + 1], shapeBlend(f));
     }
 
     if (cyclic) {
         float f = clamp((t - (1.0 - reserve)) / max(reserve, 0.0001), 0.0, 1.0);
-        col = mix(col, toBlend(colors[0]), shapeBlend(f));
+        col = mix(col, colors[0], shapeBlend(f));
     }
 
     return col;
@@ -197,7 +174,7 @@ vec3 sampleMesh(vec2 uv, vec2 aspect, float t) {
         float d = length((uv - center) * aspect) / max(radii[i], 0.02);
         float w = exp(-d * d * blobSharpness) + 0.0002;
 
-        acc += toBlend(colors[i]) * w;
+        acc += colors[i] * w;
         total += w;
     }
 
@@ -258,10 +235,10 @@ vec3 sampleWaves(vec2 uv, float t) {
     float wave3_o3 = wave((uv.y - origin3.y) * freqMult3 * 0.6 + t * 0.9);
     float finalWave_o3 = (wave1_o3 * 0.4 + wave2_o3 * 0.4 + wave3_o3 * 0.2);
 
-    vec3 mix1 = mix(toBlend(paletteWrap(0)), toBlend(paletteWrap(1)), finalWave_o1);
-    vec3 mix2 = mix(toBlend(paletteWrap(1)), toBlend(paletteWrap(2)), finalWave_o2);
-    vec3 mix3 = mix(toBlend(paletteWrap(2)), toBlend(paletteWrap(3)), finalWave_o3);
-    vec3 mix4 = mix(toBlend(paletteWrap(3)), toBlend(paletteWrap(0)), finalWave_o1);
+    vec3 mix1 = mix(waveColors[0], waveColors[1], finalWave_o1);
+    vec3 mix2 = mix(waveColors[1], waveColors[2], finalWave_o2);
+    vec3 mix3 = mix(waveColors[2], waveColors[3], finalWave_o3);
+    vec3 mix4 = mix(waveColors[3], waveColors[0], finalWave_o1);
 
     vec3 evenPairs = mix(mix1, mix3, finalWave_o2);
     vec3 oddPairs = mix(mix2, mix4, finalWave_o3);
@@ -292,9 +269,9 @@ void main() {
 
     vec3 blended;
 
-    if (mode == 5) {
+    if (mode == MODE_MESH) {
         blended = sampleMesh(uv, aspect, t);
-    } else if (mode == 6) {
+    } else if (mode == MODE_WAVES) {
         blended = sampleWaves(uv, t);
     } else {
         // Ramp modes share one signed field, remapped to 0-1 for the lookup
@@ -309,7 +286,7 @@ void main() {
         // box; the closed shapes grow until they touch the nearest edge. Either
         // way the endpoint handle in handles.js sits exactly on that contour.
         vec2 halfSize = aspect * 0.5;
-        float fit = mode == 0
+        float fit = mode == MODE_LINEAR
             ? abs(cos(angle)) * halfSize.x + abs(sin(angle)) * halfSize.y
             : min(halfSize.x, halfSize.y);
 
@@ -317,16 +294,18 @@ void main() {
         float ramp;
         bool cyclic = false;
 
-        if (mode == 0) {
-            ramp = rp.x / scale * 0.5 + 0.5;              // linear
-        } else if (mode == 1) {
-            ramp = length(rp) / scale;                     // radial
-        } else if (mode == 2) {
-            ramp = max(abs(rp.x), abs(rp.y)) / scale;      // square
-        } else if (mode == 3) {
-            ramp = (abs(rp.x) + abs(rp.y)) / scale;        // diamond
+        if (mode == MODE_LINEAR) {
+            ramp = rp.x / scale * 0.5 + 0.5;
+        } else if (mode == MODE_RADIAL) {
+            ramp = length(rp) / scale;
+        } else if (mode == MODE_SQUARE) {
+            ramp = max(abs(rp.x), abs(rp.y)) / scale;
+        } else if (mode == MODE_DIAMOND) {
+            ramp = (abs(rp.x) + abs(rp.y)) / scale;
         } else {
-            ramp = fract(atan(rp.y, rp.x) / TAU + 1.0);    // conic
+            // Conic wraps the full circle, so it has no distance to scale and
+            // ignores the scale above entirely — the panel hides spread for it.
+            ramp = fract(atan(rp.y, rp.x) / TAU + 1.0);
             cyclic = true;
         }
 
@@ -336,7 +315,9 @@ void main() {
     vec3 color = fromBlend(blended);
 
     // --- Texture ---
-    // Fine film grain, half static and half crawling
+    // Fine film grain, half static and half crawling. Both this and the dither
+    // below are sized in the canvas's own pixels, which are CSS pixels: see the
+    // note on setPixelRatio in gradient.js.
     if (grainEnabled) {
         float staticGrain = hash21(uv * resolution * 0.5) * 2.0 - 1.0;
         float animated = hash21(uv * resolution * 0.5 + fract(t) * 91.7) * 2.0 - 1.0;
