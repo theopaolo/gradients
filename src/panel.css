@@ -20,10 +20,18 @@
   font-size: var(--ui-size);
   line-height: 1.35;
   color: var(--ui-fg-soft);
+  transition: opacity var(--ui-duration) var(--ui-ease);
 }
 
 .config.is-hidden {
   display: none;
+}
+
+/* While a slider is being moved, the panel is standing in front of the thing
+   the slider changes. It thins out to a hint of itself for the length of the
+   drag — still there, still taking the pointer, no longer worth looking at. */
+.config.is-tuning {
+  opacity: 0.1;
 }
 
 /* `:where` keeps this at zero specificity, so a component that names its own
@@ -727,9 +735,6 @@
 /* --- Footer --- */
 
 .config-footer {
-  display: flex;
-  align-items: center;
-  gap: var(--ui-8);
   margin-top: var(--ui-16);
   padding-top: var(--ui-8);
   border-top: 1px solid var(--ui-border);
@@ -737,8 +742,14 @@
   font-size: var(--ui-size-sm);
 }
 
-.config-hint {
-  flex: 1;
+/* Reset on the left, close on the right, with the keyboard hint on its own
+   line above them — three items on one row leaves the hint too narrow. */
+.config-footer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-8);
+  margin-top: var(--ui-8);
 }
 
 .config-hint kbd {
@@ -749,10 +760,12 @@
   font-family: var(--ui-font-mono);
 }
 
-.config-reset {
+.config-reset,
+.config-close {
   flex: none;
-  /* Holds the right edge once the keyboard hint drops out on touch */
-  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--ui-4);
   min-height: 24px;
   padding: 0 var(--ui-8);
   cursor: pointer;
@@ -766,10 +779,20 @@
     border-color var(--ui-duration) var(--ui-ease);
 }
 
+.config-close .config-svg {
+  width: 12px;
+  height: 12px;
+}
+
 @media (hover: hover) {
   .config-reset:hover {
     color: var(--ui-danger);
     border-color: rgb(255 106 94 / 45%);
+  }
+
+  .config-close:hover {
+    color: var(--ui-fg);
+    border-color: var(--ui-border-strong);
   }
 }
 
@@ -837,7 +860,8 @@ body.is-dropping::after {
   }
 
   .config-btn,
-  .config-reset {
+  .config-reset,
+  .config-close {
     min-height: 36px;
   }
 
@@ -878,6 +902,10 @@ body.is-dropping::after {
   .config-hint {
     display: none;
   }
+
+  .config-footer-actions {
+    margin-top: 0;
+  }
 }
 
 /* --- Desktop: the body scrolls inside the chassis if a tab runs long --- */
@@ -903,6 +931,7 @@ body.is-dropping::after {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .config,
   .config *,
   .config *::before,
   .config *::after {

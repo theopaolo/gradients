@@ -141,7 +141,10 @@ panel.innerHTML = `
         <kbd>${HIDE_KEY.toUpperCase()}</kbd> hides the panel,
         <kbd>${REPLAY_KEY.toUpperCase()}</kbd> replays the intro
       </p>
-      <button type="button" class="config-reset">Reset</button>
+      <div class="config-footer-actions">
+        <button type="button" class="config-reset">Reset</button>
+        <button type="button" class="config-close">${iconHTML("close")}Close</button>
+      </div>
     </div>
   </div>
 `;
@@ -154,6 +157,7 @@ const grainCheckbox = pick(panel, ".config-grain");
 const mouseCheckbox = pick(panel, ".config-mouse");
 const handlesCheckbox = pick(panel, ".config-show-handles");
 const resetButton = pick(panel, ".config-reset");
+const closeButton = pick(panel, ".config-close");
 
 // --- Panel open / close / hide ---
 
@@ -166,6 +170,8 @@ function setOpen(open) {
 toggleButton.addEventListener("click", () =>
   setOpen(body.hasAttribute("hidden")),
 );
+
+closeButton.addEventListener("click", () => setOpen(false));
 
 // --- Tabs ---
 
@@ -220,6 +226,39 @@ tabList.addEventListener("keydown", (event) => {
 });
 
 setTab(0);
+
+// --- Fading while a slider is being moved ---
+
+// Every slider changes something on the canvas the panel is sitting on top of,
+// and the panel covers the top-right corner of it. So for as long as one is
+// being moved the panel drops to a hint of itself and gets out of the way of
+// its own result. It stays in the flow and stays interactive: the drag has to
+// be able to finish, and the fade has to end with it.
+const isSlider = (node) =>
+  node instanceof HTMLInputElement && node.type === "range";
+const setTuning = (tuning) => panel.classList.toggle("is-tuning", tuning);
+
+panel.addEventListener("pointerdown", (event) => {
+  if (isSlider(event.target)) setTuning(true);
+});
+
+// A range keeps the pointer once it has it, so the release can land well
+// outside the panel — and outside anything faded, which is the whole point.
+window.addEventListener("pointerup", () => setTuning(false));
+window.addEventListener("pointercancel", () => setTuning(false));
+
+// The arrow keys move a slider too, and hide the result the same way. Watching
+// the release on the window rather than the panel keeps the panel from sticking
+// at a tenth of itself if focus moves while the key is still down.
+const isArrow = (key) => key.startsWith("Arrow");
+
+panel.addEventListener("keydown", (event) => {
+  if (isSlider(event.target) && isArrow(event.key)) setTuning(true);
+});
+
+window.addEventListener("keyup", (event) => {
+  if (isArrow(event.key)) setTuning(false);
+});
 
 const SHORTCUTS = {
   [HIDE_KEY]: () => panel.classList.toggle("is-hidden"),
