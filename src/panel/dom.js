@@ -18,6 +18,9 @@ const ICONS = {
   check: `<path d="M3.5 8.5 6.5 11.5l6-7"/>`,
   close: `<path d="M4.5 4.5 11.5 11.5M11.5 4.5 4.5 11.5"/>`,
   plus: `<path d="M8 3.5v9M3.5 8h9"/>`,
+  // iOS's own share glyph, redrawn on this grid: the install hint names a
+  // button the user has to find in their browser, so it has to look like it.
+  share: `<path d="M5.5 7h-2v6h9V7h-2"/><path d="M8 2.5v7M5.5 5 8 2.5l2.5 2.5"/>`,
   grip: `<g class="config-svg-fill">
     <circle cx="6" cy="4" r="1"/><circle cx="10" cy="4" r="1"/>
     <circle cx="6" cy="8" r="1"/><circle cx="10" cy="8" r="1"/>

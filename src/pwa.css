@@ -1,5 +1,6 @@
-/* The update toast: the same console the config panel is cut from, sat in the
- * opposite corner so the two never overlap.
+/* The toasts — a waiting update, an offer to install: the same console the
+ * config panel is cut from, sat in the opposite corner so the two never
+ * overlap. One is up at a time, so they share a footprint as well as a look.
  */
 
 .pwa-toast {
@@ -77,6 +78,65 @@
   height: 12px;
 }
 
+/* --- Install offer --- */
+
+/* The icon takes the left padding the update toast gives its text. */
+.pwa-toast-install {
+  padding: var(--ui-8);
+}
+
+/* With a hint under it the buttons sit on the title's line rather than
+   centred on both, so the toast still reads as one row with a corner to it. */
+.pwa-toast-install.is-stacked {
+  align-items: flex-start;
+}
+
+.pwa-toast-install.is-stacked .pwa-toast-action,
+.pwa-toast-install.is-stacked .pwa-toast-close {
+  margin-top: var(--ui-2);
+}
+
+/* The thing being offered, shown as it will land on the home screen. */
+.pwa-toast-icon {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-lg);
+}
+
+.pwa-toast-body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-2);
+}
+
+.pwa-toast-install .pwa-toast-text {
+  color: var(--ui-fg);
+  font-weight: 600;
+}
+
+.pwa-toast-hint {
+  margin: 0;
+  color: var(--ui-fg-muted);
+  font-size: var(--ui-size-sm);
+}
+
+.pwa-toast-hint b {
+  color: var(--ui-fg-soft);
+  font-weight: 500;
+}
+
+/* The share glyph is a word in the sentence, so it sits on the text baseline
+   rather than in a box of its own. */
+.pwa-toast-hint .config-svg {
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  vertical-align: -2px;
+}
+
 @media (hover: hover) {
   .pwa-toast-action:hover:not(:disabled) {
     background: linear-gradient(180deg, #fff0b0, var(--ui-accent-soft));
@@ -91,10 +151,22 @@
    of its way rather than sitting on top of it. */
 @media (max-width: 767px) {
   .pwa-toast {
-    top: var(--ui-8);
+    /* Installed, this is the corner the status bar and the notch live in. */
+    top: calc(var(--ui-8) + env(safe-area-inset-top));
     right: var(--ui-8);
     bottom: auto;
     left: var(--ui-8);
+  }
+
+  /* Touch targets, on the panel's measure */
+  .pwa-toast-action,
+  .pwa-toast-close {
+    min-height: 36px;
+  }
+
+  .pwa-toast-close {
+    justify-content: center;
+    min-width: 36px;
   }
 }
 

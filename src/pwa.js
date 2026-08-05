@@ -8,6 +8,8 @@
  */
 
 import { iconHTML } from "./panel/dom.js";
+import { showToast, PRIORITY } from "./pwa/toast.js";
+import "./pwa/install.js";
 
 const SW_URL = "/service-worker.js";
 const UPDATE_CHECK_INTERVAL = 5 * 60 * 1000;
@@ -19,22 +21,11 @@ const CACHE_PREFIX = "soft-colors-";
 
 let toast;
 
-function dismissToast() {
-  if (!toast) return;
-
-  const node = toast;
-  toast = null;
-  node.classList.remove("is-shown");
-  node.addEventListener("transitionend", () => node.remove(), { once: true });
-}
-
 function showUpdateToast(onReload) {
   if (toast) return;
 
-  toast = document.createElement("div");
-  toast.className = "pwa-toast";
-  toast.setAttribute("role", "status");
-  toast.innerHTML = `
+  const element = document.createElement("div");
+  element.innerHTML = `
     <p class="pwa-toast-text">A new version is ready.</p>
     <button type="button" class="pwa-toast-action">Reload</button>
     <button type="button" class="pwa-toast-close" aria-label="Dismiss">
@@ -42,19 +33,21 @@ function showUpdateToast(onReload) {
     </button>
   `;
 
-  toast.querySelector(".pwa-toast-action").addEventListener("click", () => {
-    toast.querySelector(".pwa-toast-text").textContent = "Updating…";
-    toast.querySelector(".pwa-toast-action").disabled = true;
+  element.querySelector(".pwa-toast-action").addEventListener("click", () => {
+    element.querySelector(".pwa-toast-text").textContent = "Updating…";
+    element.querySelector(".pwa-toast-action").disabled = true;
     onReload();
   });
-  toast
-    .querySelector(".pwa-toast-close")
-    .addEventListener("click", dismissToast);
 
-  document.body.append(toast);
-  // One frame on the closed state, so the opening transition has something to
-  // run from.
-  requestAnimationFrame(() => toast?.classList.add("is-shown"));
+  // An install offer standing in the slot gives way to this one, which is the
+  // only notice here that the user cannot get back once it is gone. Clearing
+  // the handle on dismissal is what lets the next build ask again.
+  toast = showToast(element, {
+    priority: PRIORITY.update,
+    onDismiss: () => {
+      toast = null;
+    },
+  });
 }
 
 // --- Registration ---
