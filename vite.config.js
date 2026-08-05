@@ -8,9 +8,10 @@ const SW_OUTPUT = "service-worker.js";
 
 // The worker is only worth what it can serve offline, so the list is built from
 // what actually landed in dist rather than from a hand-kept array that drifts.
-// Source maps are debugging weight, and the worker script must never be able to
-// serve itself from a cache it also controls.
-const EXCLUDED = new Set([SW_OUTPUT]);
+// Source maps are debugging weight, the share image is only ever fetched by
+// crawlers, and the worker script must never be able to serve itself from a
+// cache it also controls.
+const EXCLUDED = new Set([SW_OUTPUT, "og.jpg"]);
 const isPrecachable = (path) => !path.endsWith(".map") && !EXCLUDED.has(path);
 
 function listFiles(dir, base = dir) {
